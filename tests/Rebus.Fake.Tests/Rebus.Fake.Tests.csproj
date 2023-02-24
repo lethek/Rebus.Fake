@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <LangVersion>latest</LangVersion>
+    <RootNamespace>Rebus</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Rebus.NullTransport\Rebus.NullTransport.csproj" />
+    <ProjectReference Include="..\..\src\Rebus.Fake\Rebus.Fake.csproj" />
   </ItemGroup>
 
 </Project>

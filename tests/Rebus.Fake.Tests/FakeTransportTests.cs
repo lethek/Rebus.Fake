@@ -1,15 +1,17 @@
 using Rebus.Activation;
 using Rebus.Config;
 using Rebus.Routing.TypeBased;
+using Rebus.Transport.Fake;
 
-namespace Rebus.NullTransport.Tests;
+
+namespace Rebus.Fake.Tests;
 
 public class NullTransportTests
 {
     [Fact]
     public void NullTransport_CreateQueue_DoesNothing()
     {
-        var transport = new NullTransport();
+        var transport = new FakeTransport();
         transport.CreateQueue("queue1");
     }
 
@@ -20,7 +22,7 @@ public class NullTransportTests
         using var activator = new BuiltinHandlerActivator();
         
         using var bus = Configure.With(activator)
-            .Transport(c => c.UseNullTransportAsOneWayClient())
+            .Transport(c => c.UseFakeTransportAsOneWayClient())
             .Routing(c => c.TypeBased().Map<string>("SomeQueue"))
             .Start();
 
@@ -34,7 +36,7 @@ public class NullTransportTests
         using var activator = new BuiltinHandlerActivator();
 
         using var bus = Configure.With(activator)
-            .Transport(c => c.UseNullTransport("InputQueue"))
+            .Transport(c => c.UseFakeTransport("InputQueue"))
             .Routing(c => c.TypeBased().Map<string>("SomeQueue"))
             .Start();
 

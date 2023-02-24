@@ -1,16 +1,17 @@
-﻿using Rebus.Config;
+﻿using Rebus.Persistence.Fake;
 using Rebus.Subscriptions;
 using Rebus.Transport;
+using Rebus.Transport.Fake;
 
 
-namespace Rebus.NullTransport;
+namespace Rebus.Config;
 
 public static class StandardConfigurerExtensions
 {
     /// <summary>
     /// Configures Rebus to use no-op message queues, delivering/receiving is an empty operation
     /// </summary>
-    public static void UseNullTransport(this StandardConfigurer<ITransport> configurer, string inputQueueName)
+    public static void UseFakeTransport(this StandardConfigurer<ITransport> configurer, string inputQueueName)
     {
         if (configurer == null) {
             throw new ArgumentNullException(nameof(configurer));
@@ -21,38 +22,38 @@ public static class StandardConfigurerExtensions
         }
 
         configurer
-            .OtherService<NullTransport>()
-            .Register(c => new NullTransport(inputQueueName));
+            .OtherService<FakeTransport>()
+            .Register(c => new FakeTransport(inputQueueName));
 
         configurer
             .OtherService<ITransportInspector>()
-            .Register(c => c.Get<NullTransport>());
+            .Register(c => c.Get<FakeTransport>());
 
-        configurer.Register(c => c.Get<NullTransport>());
+        configurer.Register(c => c.Get<FakeTransport>());
     }
 
 
     /// <summary>
     /// Configures Rebus to use no-op message queues, configuring this instance to be a one-way client, delivering is an empty operation
     /// </summary>
-    public static void UseNullTransportAsOneWayClient(this StandardConfigurer<ITransport> configurer)
+    public static void UseFakeTransportAsOneWayClient(this StandardConfigurer<ITransport> configurer)
     {
         if (configurer == null) {
             throw new ArgumentNullException(nameof(configurer));
         }
 
-        configurer.Register(c => new NullTransport());
+        configurer.Register(c => new FakeTransport());
 
         OneWayClientBackdoor.ConfigureOneWayClient(configurer);
     }
 
 
-    public static void UseNullSubscriptionStorage(this StandardConfigurer<ISubscriptionStorage> configurer)
+    public static void UseFakeSubscriptionStorage(this StandardConfigurer<ISubscriptionStorage> configurer)
     {
         if (configurer == null) {
             throw new ArgumentNullException(nameof(configurer));
         }
 
-        configurer.Register(c => new NullSubscriptionStorage());
+        configurer.Register(c => new FakeSubscriptionStorage());
     }
 }

@@ -1,9 +1,9 @@
 ﻿using Rebus.Subscriptions;
 
 
-namespace Rebus.NullTransport;
+namespace Rebus.Persistence.Fake;
 
-public class NullSubscriptionStorage : ISubscriptionStorage
+public class FakeSubscriptionStorage : ISubscriptionStorage
 {
     public Task<string[]> GetSubscriberAddresses(string topic)
         => NoSubscriberAddresses;

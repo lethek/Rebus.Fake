@@ -1,12 +1,11 @@
 ﻿using Rebus.Messages;
-using Rebus.Transport;
 
 
-namespace Rebus.NullTransport;
+namespace Rebus.Transport.Fake;
 
-public class NullTransport : AbstractRebusTransport, ITransport, ITransportInspector
+public class FakeTransport : AbstractRebusTransport, ITransport, ITransportInspector
 {
-    public NullTransport(string? inputQueueName = null) : base(inputQueueName) { }
+    public FakeTransport(string? inputQueueName = null) : base(inputQueueName) { }
 
 
     public override void CreateQueue(string address) { }

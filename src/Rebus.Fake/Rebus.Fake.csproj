@@ -10,11 +10,11 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Transport for Rebus that doesn't actually send/receive anything at all. Kind-of like /dev/null in Linux. Useful for scenarios where you're forced to inject a Rebus instance but don't care about the functionality using it at all.</Description>
     <PackageTags>rebus transport empty mock</PackageTags>
-    <PackageProjectUrl>https://github.com/lethek/Rebus.NullTransport</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/lethek/Rebus.Fake</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/lethek/Rebus.NullTransport</RepositoryUrl>
-    <RootNamespace>Rebus.NullTransport</RootNamespace>
+    <RepositoryUrl>https://github.com/lethek/Rebus.Fake</RepositoryUrl>
+    <RootNamespace>Rebus</RootNamespace>
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
@@ -32,12 +32,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
     <PackageReference Include="Rebus" Version="[6.0.0,)" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Rebus.NullTransport.Tests" />
+    <InternalsVisibleTo Include="Rebus.Fake.Tests" />
   </ItemGroup>
 
   <ItemGroup>
