@@ -3,12 +3,12 @@ using Rebus.Config;
 using Rebus.Routing.TypeBased;
 
 
-namespace Rebus.Fake.Tests;
+namespace Rebus;
 
-public class NullSubscriptionStorageTests
+public class FakeSubscriptionStorageTests
 {
     [Fact]
-    public async Task BusUsingNullSubscriptionStorage_Subscribe_DoesNothing()
+    public async Task BusUsingFakeSubscriptionStorage_Subscribe_DoesNothing()
     {
         using var activator = new BuiltinHandlerActivator();
 

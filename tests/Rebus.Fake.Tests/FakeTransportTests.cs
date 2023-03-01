@@ -4,12 +4,12 @@ using Rebus.Routing.TypeBased;
 using Rebus.Transport.Fake;
 
 
-namespace Rebus.Fake.Tests;
+namespace Rebus;
 
-public class NullTransportTests
+public class FakeTransportTests
 {
     [Fact]
-    public void NullTransport_CreateQueue_DoesNothing()
+    public void FakeTransport_CreateQueue_DoesNothing()
     {
         var transport = new FakeTransport();
         transport.CreateQueue("queue1");
@@ -17,7 +17,7 @@ public class NullTransportTests
 
 
     [Fact]
-    public async Task BusUsingNullTransportAsOneWayClient_Send_DoesNothing()
+    public async Task BusUsingFakeTransportAsOneWayClient_Send_DoesNothing()
     {
         using var activator = new BuiltinHandlerActivator();
         
@@ -31,7 +31,7 @@ public class NullTransportTests
 
 
     [Fact]
-    public async Task BusUsingNullTransport_Send_DoesNothing()
+    public async Task BusUsingFakeTransport_Send_DoesNothing()
     {
         using var activator = new BuiltinHandlerActivator();
 
