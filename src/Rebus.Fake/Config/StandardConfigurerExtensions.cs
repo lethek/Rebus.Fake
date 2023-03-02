@@ -1,4 +1,5 @@
 ﻿using Rebus.Persistence.Fake;
+using Rebus.Sagas;
 using Rebus.Subscriptions;
 using Rebus.Transport;
 using Rebus.Transport.Fake;
@@ -55,5 +56,15 @@ public static class StandardConfigurerExtensions
         }
 
         configurer.Register(c => new FakeSubscriptionStorage());
+    }
+
+
+    public static void UseFakeSagaStorage(this StandardConfigurer<ISagaStorage> configurer)
+    {
+        if (configurer == null) {
+            throw new ArgumentNullException(nameof(configurer));
+        }
+
+        configurer.Register(c => new FakeSagaStorage());
     }
 }
