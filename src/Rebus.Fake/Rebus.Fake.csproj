@@ -9,7 +9,7 @@
     <Copyright>Copyright © Michael Monsour 2022</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Transport for Rebus that doesn't actually send/receive anything at all. Kind-of like /dev/null in Linux. Useful for scenarios where you're forced to inject a Rebus instance but don't care about the functionality using it at all.</Description>
-    <PackageTags>rebus transport empty mock</PackageTags>
+    <PackageTags>rebus transport empty mock fake</PackageTags>
     <PackageProjectUrl>https://github.com/lethek/Rebus.Fake</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryType>git</RepositoryType>
