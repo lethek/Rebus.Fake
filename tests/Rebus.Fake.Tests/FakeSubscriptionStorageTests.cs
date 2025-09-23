@@ -49,22 +49,26 @@ public class FakeSubscriptionStorageTests
     [Fact]
     public async Task BusUsingFakeSubscriptionStorage_PubSub_DoesNotReceiveMessages()
     {
-        //Hypothesis that we receive exactly 0 messages
-        var hypothesis = Hypothesis.For<string>()
-            .Exactly(0, s => true);
+        var observer = new Observer<string>();
 
-        using var activator = new BuiltinHandlerActivator().Register(hypothesis.AsHandler);
+        //Hypothesis that we receive exactly 0 messages
+        var hypothesis = Hypothesis.On(observer)
+            .Timebox(HypothesisTimeout)
+            .Exactly(0)
+            .Match(s => true);
+
+        using var activator = new BuiltinHandlerActivator().Register(observer.AsHandler);
 
         //Initialize bus with a REAL transport but FAKE subscription storage
         using var bus = Configure.With(activator)
-            .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "subscriber"))
+            .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "subscriber", registerSubscriptionStorage: false))
             .Subscriptions(c => c.UseFakeSubscriptionStorage())
             .Start();
 
         await bus.Subscribe<string>();
         await bus.Publish("Saluton mondo");
 
-        await hypothesis.Validate(HypothesisTimeout);
+        await hypothesis.Validate();
 
         await bus.Unsubscribe<string>();
     }

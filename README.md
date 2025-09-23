@@ -11,10 +11,10 @@ I've found this useful for scenarios where I'm forced to inject a Rebus instance
 it at all. I also don't want messages that I know will never be consumed, getting collected in-memory.
 
 E.g. an application intended for both online and offline use: when hosted in an online environment it communicates with a
-number of external services using Rebus, but when it's hosted offline and those external services are not needed it is simple
+number of external services using Rebus, but when it's hosted offline and those external services are not needed it's simpler
 to just inject Rebus with a FakeTransport and drop all messages that the application attempts to send.
 
-*The official InMemory transport etc is better for testing. I do NOT recommend using FakeTransport for that.*
+*The official InMemory transport etc. is better for testing. I do NOT recommend using FakeTransport for that.*
 
 # How
 
@@ -25,7 +25,7 @@ using var bus = Configure.With(...)
     .Start();
 ```
 
-Or if the bus is expected to be bi-directional and subscribing to topics:
+Or if the bus is expected to be bidirectional and subscribing to topics:
 
 ```csharp
 using var bus = Configure.With(...)

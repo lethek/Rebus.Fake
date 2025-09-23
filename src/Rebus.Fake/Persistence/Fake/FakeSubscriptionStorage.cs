@@ -5,8 +5,8 @@ namespace Rebus.Persistence.Fake;
 
 public class FakeSubscriptionStorage : ISubscriptionStorage
 {
-    public Task<string[]> GetSubscriberAddresses(string topic)
-        => NoSubscriberAddresses;
+    public Task<IReadOnlyList<string>> GetSubscriberAddresses(string topic)
+        => Task.FromResult(NoSubscriberAddresses);
 
 
     public Task RegisterSubscriber(string topic, string subscriberAddress)
@@ -20,5 +20,5 @@ public class FakeSubscriptionStorage : ISubscriptionStorage
     public bool IsCentralized { get; } = true;
 
 
-    private static readonly Task<string[]> NoSubscriberAddresses = Task.FromResult(Array.Empty<string>());
+    private static readonly IReadOnlyList<string> NoSubscriberAddresses = [];
 }

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
@@ -30,9 +30,11 @@ jobs:
         useConfigFile: true
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 7.x
+        dotnet-version: |
+          8.x
+          9.x
 
     - name: Restore
       run: dotnet restore
@@ -47,22 +49,14 @@ jobs:
       run: dotnet pack -c ${{ env.buildConfiguration }} -p:PackageOutputPath="${{ github.workspace }}/artifacts/" -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
 
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: nuget
         path: |
           ${{ github.workspace }}/artifacts/*.nupkg
           ${{ github.workspace }}/artifacts/*.snupkg
 
-    - name: Push (Pre-release)
-      if: ${{ steps.gitversion.outputs.nuGetPreReleaseTag != '' }}
-      uses: lethek/os-specific-run@v1.0.6
-      with:
-        linux: dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" -s ${{ secrets.MYGET_SOURCE }} -k ${{ secrets.MYGET_API_KEY }} --skip-duplicate
-        windows: dotnet nuget push "${{ github.workspace }}\artifacts\*.nupkg" -s ${{ secrets.MYGET_SOURCE }} -k ${{ secrets.MYGET_API_KEY }} --skip-duplicate
-
     - name: Push (Release)
-      if: ${{ steps.gitversion.outputs.nuGetPreReleaseTag == '' }}
       uses: lethek/os-specific-run@v1.0.6
       with:
         linux: dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" -s ${{ secrets.NUGET_SOURCE }} -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
