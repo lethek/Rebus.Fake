@@ -21,6 +21,18 @@ public class FakeTransportTests
 
 
     [Fact]
+    public async Task FakeTransport_GetProperties_ReturnsZeroQueueLength()
+    {
+        var transport = new FakeTransport();
+        var properties = await transport.GetProperties();
+
+        Assert.NotNull(properties);
+        Assert.Single(properties);
+        Assert.Contains(properties, kvp => kvp.Key == "queue-length" && (int)kvp.Value == 0);
+    }
+
+
+    [Fact]
     public async Task BusUsingFakeTransportAsOneWayClient_Send_DoesNotThrow()
     {
         using var activator = new BuiltinHandlerActivator();
