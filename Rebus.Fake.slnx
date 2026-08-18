@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".github/workflows/dotnet.yml" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Rebus.Fake/Rebus.Fake.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Rebus.Fake.Tests/Rebus.Fake.Tests.csproj" />
+  </Folder>
+</Solution>
