@@ -1,7 +1,10 @@
 assembly-versioning-scheme: MajorMinorPatch
-mode: ContinuousDeployment
+# v6 renamed the deployment modes: this "ContinuousDelivery" is what v5 called
+# "ContinuousDeployment" (prerelease that increments per commit).
+mode: ContinuousDelivery
 branches:
-  master:
+  main:
     regex: ^main$|^master$
+    label: ci
 ignore:
   sha: []
