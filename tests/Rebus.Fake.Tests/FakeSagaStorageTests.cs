@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using Hypothesist;
 
 using Rebus.Activation;
 using Rebus.Config;
@@ -81,11 +81,17 @@ public class FakeSagaStorageTests
     [Fact]
     public async Task BusUsingFakeSagaStorage_DoesNotPersistSagaBetweenMessages()
     {
-        var observedCounts = new ConcurrentQueue<int>();
-        using var handled = new CountdownEvent(2);
+        var observer = new Observer<int>();
+
+        //Hypothesis that 2 messages are each handled by a fresh saga, i.e. both see a count of 1.
+        //AtLeast completes as soon as the second match arrives, so a passing run never waits out the timebox.
+        var hypothesis = Hypothesis.On(observer)
+            .Timebox(SagaTimeout)
+            .AtLeast(2)
+            .Match(count => count == 1);
 
         using var activator = new BuiltinHandlerActivator();
-        activator.Register(() => new CountingSaga(observedCounts, handled));
+        activator.Register(() => new CountingSaga(observer));
 
         //Initialize bus with a REAL transport but FAKE saga storage
         using var bus = Configure.With(activator)
@@ -97,12 +103,9 @@ public class FakeSagaStorageTests
         await bus.SendLocal(new SagaMessage(correlationId));
         await bus.SendLocal(new SagaMessage(correlationId));
 
-        Assert.True(handled.Wait(SagaTimeout), "The saga did not handle both messages within the timeout");
-
         //Both messages share a correlation id, so real storage would count 1 then 2.
         //FakeSagaStorage.Find always returns null, so every message starts a fresh saga.
-        Assert.Equal(2, observedCounts.Count);
-        Assert.All(observedCounts, count => Assert.Equal(1, count));
+        await hypothesis.Validate();
     }
 
 
@@ -118,19 +121,17 @@ public class FakeSagaStorageTests
     }
 
 
-    private class CountingSaga(ConcurrentQueue<int> observedCounts, CountdownEvent handled)
+    private class CountingSaga(Observer<int> observer)
         : Saga<CountingSagaData>, IAmInitiatedBy<SagaMessage>
     {
         protected override void CorrelateMessages(ICorrelationConfig<CountingSagaData> config)
             => config.Correlate<SagaMessage>(m => m.CorrelationId, d => d.CorrelationId);
 
 
-        public Task Handle(SagaMessage message)
+        public async Task Handle(SagaMessage message)
         {
             Data.Count++;
-            observedCounts.Enqueue(Data.Count);
-            handled.Signal();
-            return Task.CompletedTask;
+            await observer.Add(Data.Count, CancellationToken.None);
         }
     }
 
