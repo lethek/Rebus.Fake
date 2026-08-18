@@ -22,6 +22,16 @@ public class FakeSubscriptionStorageTests
 
 
     [Fact]
+    public void FakeSubscriptionStorage_IsCentralized_IsTrue()
+    {
+        var storage = new FakeSubscriptionStorage();
+
+        //Rebus uses this to decide whether subscribing goes via the transport or straight to storage
+        Assert.True(storage.IsCentralized);
+    }
+
+
+    [Fact]
     public async Task FakeSubscriptionStorage_RegisterAndUnregister_DoesNotThrow()
     {
         var storage = new FakeSubscriptionStorage();

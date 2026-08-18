@@ -5,6 +5,7 @@ using Rebus.Activation;
 using Rebus.Config;
 using Rebus.Persistence.InMem;
 using Rebus.Routing.TypeBased;
+using Rebus.Transport;
 using Rebus.Transport.Fake;
 
 
@@ -28,7 +29,37 @@ public class FakeTransportTests
 
         Assert.NotNull(properties);
         Assert.Single(properties);
-        Assert.Contains(properties, kvp => kvp.Key == "queue-length" && (int)kvp.Value == 0);
+        Assert.Contains(properties, kvp => kvp.Key == TransportInspectorPropertyKeys.QueueLength && (int)kvp.Value == 0);
+    }
+
+
+    [Fact]
+    public void FakeTransport_Address_IsNullWhenConfiguredAsOneWayClient()
+    {
+        var transport = new FakeTransport();
+
+        Assert.Null(transport.Address);
+    }
+
+
+    [Fact]
+    public void FakeTransport_Address_MatchesInputQueueName()
+    {
+        var transport = new FakeTransport("inputQueue");
+
+        Assert.Equal("inputQueue", transport.Address);
+    }
+
+
+    [Fact]
+    public async Task FakeTransport_Receive_AlwaysReturnsNull()
+    {
+        var transport = new FakeTransport("inputQueue");
+
+        using var scope = new RebusTransactionScope();
+        var message = await transport.Receive(scope.TransactionContext, CancellationToken.None);
+
+        Assert.Null(message);
     }
 
 

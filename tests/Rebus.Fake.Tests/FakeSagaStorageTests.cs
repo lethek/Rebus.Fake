@@ -1,5 +1,10 @@
+using System.Collections.Concurrent;
+
+using Rebus.Activation;
+using Rebus.Config;
 using Rebus.Persistence.Fake;
 using Rebus.Sagas;
+using Rebus.Transport.InMem;
 
 
 namespace Rebus;
@@ -71,6 +76,66 @@ public class FakeSagaStorageTests
         var result = await storage.Find(typeof(TestSagaData), nameof(TestSagaData.CorrelationId), correlationId);
         Assert.Null(result);
     }
+
+
+    [Fact]
+    public async Task BusUsingFakeSagaStorage_DoesNotPersistSagaBetweenMessages()
+    {
+        var observedCounts = new ConcurrentQueue<int>();
+        using var handled = new CountdownEvent(2);
+
+        using var activator = new BuiltinHandlerActivator();
+        activator.Register(() => new CountingSaga(observedCounts, handled));
+
+        //Initialize bus with a REAL transport but FAKE saga storage
+        using var bus = Configure.With(activator)
+            .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "sagas"))
+            .Sagas(s => s.UseFakeSagaStorage())
+            .Start();
+
+        var correlationId = Guid.NewGuid().ToString();
+        await bus.SendLocal(new SagaMessage(correlationId));
+        await bus.SendLocal(new SagaMessage(correlationId));
+
+        Assert.True(handled.Wait(SagaTimeout), "The saga did not handle both messages within the timeout");
+
+        //Both messages share a correlation id, so real storage would count 1 then 2.
+        //FakeSagaStorage.Find always returns null, so every message starts a fresh saga.
+        Assert.Equal(2, observedCounts.Count);
+        Assert.All(observedCounts, count => Assert.Equal(1, count));
+    }
+
+
+    public record SagaMessage(string CorrelationId);
+
+
+    public class CountingSagaData : ISagaData
+    {
+        public Guid Id { get; set; }
+        public int Revision { get; set; }
+        public string CorrelationId { get; set; } = "";
+        public int Count { get; set; }
+    }
+
+
+    private class CountingSaga(ConcurrentQueue<int> observedCounts, CountdownEvent handled)
+        : Saga<CountingSagaData>, IAmInitiatedBy<SagaMessage>
+    {
+        protected override void CorrelateMessages(ICorrelationConfig<CountingSagaData> config)
+            => config.Correlate<SagaMessage>(m => m.CorrelationId, d => d.CorrelationId);
+
+
+        public Task Handle(SagaMessage message)
+        {
+            Data.Count++;
+            observedCounts.Enqueue(Data.Count);
+            handled.Signal();
+            return Task.CompletedTask;
+        }
+    }
+
+
+    private static readonly TimeSpan SagaTimeout = TimeSpan.FromSeconds(5);
 
 
     private class TestSagaData : ISagaData
