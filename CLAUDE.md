@@ -10,13 +10,15 @@ Rebus.Fake is a NuGet package that provides "no-op" implementations of Rebus com
 
 ## Solution Structure
 
+The solution uses the XML-based `.slnx` format (`Rebus.Fake.slnx`), which requires SDK 9.0.200 or newer.
+
 ```
 src/Rebus.Fake/          # Main library (targets netstandard2.0)
 ├── Config/              # Extension methods for Rebus configuration
 ├── Transport/Fake/      # FakeTransport implementation
 └── Persistence/Fake/    # FakeSubscriptionStorage and FakeSagaStorage
 
-tests/Rebus.Fake.Tests/  # xUnit tests (targets net8.0 and net9.0)
+tests/Rebus.Fake.Tests/  # xUnit tests (targets net8.0 and net10.0)
 ```
 
 ## Build Commands
@@ -61,6 +63,10 @@ dotnet pack -c Release -p:PackageOutputPath="./artifacts/"
 - `Find()` always returns null (no sagas found)
 - `Insert()`, `Update()`, and `Delete()` are no-ops
 
+### API Documentation
+
+The library sets `GenerateDocumentationFile` with `WarningsAsErrors=CS1591`, so every publicly visible type and member must carry an XML doc comment. Adding an undocumented public API fails the build.
+
 ### Configuration Extensions
 
 All configuration is done through extension methods in `Config/StandardConfigurerExtensions.cs`:
@@ -72,8 +78,10 @@ All configuration is done through extension methods in `Config/StandardConfigure
 
 ## Versioning
 
-- Uses GitVersion for automatic versioning (see `GitVersion.yml`)
+- Uses GitVersion 6 for automatic versioning (see `GitVersion.yml`)
 - Version numbers are determined from git tags and branch names
+- The package version comes from GitVersion's `semVer` output (e.g. `2.0.1-ci.7`). GitVersion 6 removed the `NuGetVersion` variable that earlier versions used
+- `mode: ContinuousDelivery` is what GitVersion 5 called `ContinuousDeployment`; the modes were renamed in v6, and v6's `ContinuousDeployment` produces stable (non-prerelease) versions instead
 - CI/CD publishes to NuGet on pushes to main/master or version tags
 
 ## Testing
@@ -88,11 +96,13 @@ Test pattern: Tests create hypotheses that exactly 0 messages are received withi
 ## CI/CD
 
 GitHub Actions workflow (`.github/workflows/dotnet.yml`):
-1. Runs on pushes to main/master or version tags
+1. Runs on pushes to main/master, version tags, and pull requests against main/master
 2. Uses GitVersion to determine package version
-3. Builds with .NET 8.x and 9.x
+3. Builds with .NET 8.x and 10.x
 4. Runs tests (excluding IntegrationTests filter)
-5. Packs and publishes to NuGet
+5. Packs, uploads the packages as build artifacts, and publishes to NuGet
+
+Publishing is controlled by the `publishEnabled` variable in the workflow's `env` block. While it is `'false'` the push step is skipped; set it to `'true'` to publish. The push step additionally only runs for `push` events, so pull requests can never publish.
 
 ## Dependencies
 
