@@ -24,6 +24,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Secrets cannot be referenced from the workflow-level env block, so this is lifted to the job
+    # to let the publishing steps test for it in their if conditions.
+    env:
+      NUGET_USER: ${{ secrets.NUGET_USER }}
     steps:
     - name: Checkout
       uses: actions/checkout@v7
@@ -96,15 +100,17 @@ jobs:
 
     # Trusted Publishing: exchanges a GitHub OIDC token for an API key that is valid for 1 hour,
     # so this must run immediately before the push rather than earlier in the job.
+    # Both steps are skipped when the NUGET_USER secret is absent, so a repo without
+    # publishing configured still gets a green build.
     - name: NuGet login (OIDC)
       id: nuget-login
-      if: ${{ env.publishEnabled == 'true' && github.event_name == 'push' }}
+      if: ${{ env.publishEnabled == 'true' && github.event_name == 'push' && env.NUGET_USER != '' }}
       uses: NuGet/login@v1
       with:
-        user: ${{ secrets.NUGET_USER }}
+        user: ${{ env.NUGET_USER }}
 
     - name: Push (Release)
-      if: ${{ env.publishEnabled == 'true' && github.event_name == 'push' }}
+      if: ${{ env.publishEnabled == 'true' && github.event_name == 'push' && env.NUGET_USER != '' }}
       env:
         NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
       run: dotnet nuget push "${{ github.workspace }}/artifacts/"*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
