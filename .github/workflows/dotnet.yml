@@ -17,9 +17,8 @@ concurrency:
 
 env:
   buildConfiguration: Release
-  # TEMPORARY: publishing to NuGet is disabled while the workflow changes are being verified.
-  # Set back to 'true' to re-enable the Push (Release) step.
-  publishEnabled: 'false'
+  # Kill switch for NuGet publishing: set to 'false' to skip the Push (Release) step.
+  publishEnabled: 'true'
 
 jobs:
   build:
