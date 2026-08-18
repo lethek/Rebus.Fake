@@ -102,6 +102,8 @@ GitHub Actions workflow (`.github/workflows/dotnet.yml`):
 4. Runs tests (excluding IntegrationTests filter)
 5. Packs, uploads the packages as build artifacts, and publishes to NuGet
 
+Publishing uses [NuGet Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) rather than a long-lived API key. The `NuGet/login` step exchanges a GitHub OIDC token (hence `id-token: write`) for an API key valid for 1 hour, so it must stay immediately before the push step. The only secret involved is `NUGET_USER`, the nuget.org profile name. The matching trusted publishing policy is registered on nuget.org against repository owner `lethek`, repository `Rebus.Fake`, and workflow file `dotnet.yml`; renaming the workflow file breaks publishing until the policy is updated.
+
 Publishing is controlled by the `publishEnabled` variable in the workflow's `env` block. While it is `'false'` the push step is skipped; set it to `'true'` to publish. The push step additionally only runs for `push` events, so pull requests can never publish.
 
 ## Dependencies
