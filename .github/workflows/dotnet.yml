@@ -4,16 +4,28 @@ on:
   push:
     branches: [ main, master ]
     tags: [ v* ]
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   buildConfiguration: Release
+  # TEMPORARY: publishing to NuGet is disabled while the workflow changes are being verified.
+  # Set back to 'true' to re-enable the Push (Release) step.
+  publishEnabled: 'false'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v7
       with:
         fetch-depth: 0
 
@@ -30,7 +42,7 @@ jobs:
         useConfigFile: true
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: |
           8.x
@@ -49,7 +61,7 @@ jobs:
       run: dotnet pack -c ${{ env.buildConfiguration }} -p:PackageOutputPath="${{ github.workspace }}/artifacts/" -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
 
     - name: Upload
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: nuget
         path: |
@@ -57,7 +69,8 @@ jobs:
           ${{ github.workspace }}/artifacts/*.snupkg
 
     - name: Push (Release)
-      uses: lethek/os-specific-run@v1.0.6
-      with:
-        linux: dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" -s ${{ secrets.NUGET_SOURCE }} -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
-        windows: dotnet nuget push "${{ github.workspace }}\artifacts\*.nupkg" -s ${{ secrets.NUGET_SOURCE }} -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+      env:
+        NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      if: ${{ env.publishEnabled == 'true' && github.event_name == 'push' && env.NUGET_SOURCE != '' }}
+      run: dotnet nuget push "${{ github.workspace }}/artifacts/"*.nupkg -s "$NUGET_SOURCE" -k "$NUGET_API_KEY" --skip-duplicate
