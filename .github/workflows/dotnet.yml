@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -53,6 +54,27 @@ jobs:
 
     - name: Test
       run: dotnet test -c ${{ env.buildConfiguration }} --no-build -v normal --filter FullyQualifiedName!~IntegrationTests --collect:"XPlat Code Coverage" --results-directory ${{ github.workspace }}/coverage
+
+    - name: Generate coverage summary
+      if: ${{ !cancelled() }}
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.5.11
+      with:
+        reports: ${{ github.workspace }}/coverage/**/coverage.cobertura.xml
+        targetdir: ${{ github.workspace }}/coveragereport
+        reporttypes: MarkdownSummaryGithub
+
+    - name: Publish coverage in job summary
+      if: ${{ !cancelled() }}
+      run: cat ${{ github.workspace }}/coveragereport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Comment coverage on pull request
+      # Fork PRs only get a read-only token, so this cannot post there
+      if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+      continue-on-error: true
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_NUMBER: ${{ github.event.number }}
+      run: gh pr comment $PR_NUMBER --edit-last --create-if-none --body-file ${{ github.workspace }}/coveragereport/SummaryGithub.md
 
     - name: Upload coverage
       if: ${{ !cancelled() }}
