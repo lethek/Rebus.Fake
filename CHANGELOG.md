@@ -3,6 +3,12 @@
 Notable changes for consumers of the `Rebus.Fake` package. Prerelease `-ci.*` builds are published per commit and are
 not listed here.
 
+## 2.1.1 - 2026-08-19
+
+- Package README and description rewritten: scope, when to use this instead of Rebus's InMemory
+  transport or `FakeBus`, and deferred-message behaviour.
+- No code changes; the assembly is identical to 2.1.0.
+
 ## 2.1.0 - 2026-08-18
 
 - XML documentation now ships with the package, so all public types and members show IntelliSense.
