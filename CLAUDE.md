@@ -33,8 +33,11 @@ dotnet build -c Release
 # Run all tests
 dotnet test -c Release
 
-# Run a specific test
-dotnet test --filter "FullyQualifiedName~FakeTransportTests.BusUsingFakeTransport_Send_DoesNotDeliverMessages"
+# Run a specific test (TUnit uses --treenode-filter; VSTest's --filter is not supported)
+dotnet test --treenode-filter "/*/*/FakeTransportTests/*"
+
+# Run with coverage (one report per target framework, under bin/<tfm>/TestResults)
+dotnet test -c Release --coverage --coverage-output-format cobertura
 
 # Pack NuGet package
 dotnet pack -c Release -p:PackageOutputPath="./artifacts/"
@@ -95,9 +98,17 @@ All configuration is done through extension methods in `Config/StandardConfigure
 ## Testing
 
 Tests use:
-- **xUnit** as the test framework
+- **TUnit** as the test framework, running on Microsoft.Testing.Platform rather than VSTest
 - **Hypothesist.Rebus** for testing observable behavior (verifying messages are NOT received)
 - Tests verify that operations don't throw exceptions and that messages are properly discarded
+
+TUnit specifics worth knowing before editing tests:
+- The test project is an `Exe` (`OutputType`), and must not reference `Microsoft.NET.Test.Sdk` or `coverlet.collector` - both break test discovery.
+- `global.json` opts `dotnet test` into MTP mode. Without it, the .NET 10 SDK fails with "Testing with VSTest target is no longer supported".
+- `[Test]` replaces `[Fact]`; assertions are awaited: `await Assert.That(actual).IsEqualTo(expected)`. A test containing an assertion must be `async Task`.
+- `--filter` is silently rejected and reports "Zero tests ran". Use `--treenode-filter "/*/*/Class/Test"`.
+- Coverage comes from `Microsoft.Testing.Extensions.CodeCoverage` via `--coverage`, not coverlet. It counts compiler-generated closure classes, so lambdas registered but never resolved show as uncovered - which is how the missing `ITransportInspector` test was found.
+- Tests run in parallel by default. Each test builds its own bus and `InMemNetwork`, so they stay isolated; anything sharing state needs `[NotInParallel]`.
 
 Test pattern: Tests create hypotheses that exactly 0 messages are received within a short timeout (0.5s), then send messages and verify the hypothesis holds.
 
@@ -111,9 +122,16 @@ GitHub Actions workflow (`.github/workflows/dotnet.yml`):
 1. Runs on pushes to main/master, version tags, and pull requests against main/master
 2. Uses GitVersion to determine package version
 3. Builds with .NET 8.x and 10.x
-4. Runs tests (excluding IntegrationTests filter) with `--collect:"XPlat Code Coverage"`
+4. Runs tests with `--coverage --coverage-output-format cobertura`
 5. Merges both frameworks' Cobertura reports with ReportGenerator, writes the result to the job summary, and comments it on pull requests
 6. Packs, uploads the packages as build artifacts, and publishes to NuGet
+
+Coverage uses `--results-directory`, not `--coverage-output`. The distinction matters:
+
+- `--coverage-output` takes a single **file** path, so both target frameworks write to it and the last to finish silently overwrites the other. That would hide per-framework differences as soon as the library multi-targets or gains `#if` blocks. It also rejects a directory path, throwing `DirectoryNotFoundException`.
+- `--results-directory` takes a **directory**, and each framework writes a GUID-named report into it, so both survive and ReportGenerator merges them (the summary reports `MultiReport (2x Cobertura)`).
+
+Do not rely on the default location: on Windows the reports land under `tests/**/bin/<tfm>/TestResults`, but on the Linux CI runner they land in the workspace root `TestResults`. A glob written against one platform silently matches nothing on the other, which fails ReportGenerator rather than the test run.
 
 Coverage steps use `if: ${{ !cancelled() }}` so a failing test run still reports coverage. The PR comment uses `gh pr comment --edit-last --create-if-none` to update a single comment rather than adding one per push; it cannot post on pull requests from forks, which only get a read-only token, so that step is `continue-on-error`.
 

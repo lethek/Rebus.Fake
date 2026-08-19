@@ -1,4 +1,4 @@
-using Hypothesist;
+﻿using Hypothesist;
 using Hypothesist.Rebus;
 
 using Rebus.Activation;
@@ -13,7 +13,7 @@ namespace Rebus;
 
 public class FakeTransportTests
 {
-    [Fact]
+    [Test]
     public void FakeTransport_CreateQueue_DoesNotThrow()
     {
         var transport = new FakeTransport();
@@ -21,37 +21,37 @@ public class FakeTransportTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task FakeTransport_GetProperties_ReturnsZeroQueueLength()
     {
         var transport = new FakeTransport();
         var properties = await transport.GetProperties();
 
-        Assert.NotNull(properties);
-        Assert.Single(properties);
-        Assert.Contains(properties, kvp => kvp.Key == TransportInspectorPropertyKeys.QueueLength && (int)kvp.Value == 0);
+        await Assert.That(properties).IsNotNull();
+        await Assert.That(properties).HasSingleItem();
+        await Assert.That(properties[TransportInspectorPropertyKeys.QueueLength]).IsEqualTo(0);
     }
 
 
-    [Fact]
-    public void FakeTransport_Address_IsNullWhenConfiguredAsOneWayClient()
+    [Test]
+    public async Task FakeTransport_Address_IsNullWhenConfiguredAsOneWayClient()
     {
         var transport = new FakeTransport();
 
-        Assert.Null(transport.Address);
+        await Assert.That(transport.Address).IsNull();
     }
 
 
-    [Fact]
-    public void FakeTransport_Address_MatchesInputQueueName()
+    [Test]
+    public async Task FakeTransport_Address_MatchesInputQueueName()
     {
         var transport = new FakeTransport("inputQueue");
 
-        Assert.Equal("inputQueue", transport.Address);
+        await Assert.That(transport.Address).IsEqualTo("inputQueue");
     }
 
 
-    [Fact]
+    [Test]
     public async Task FakeTransport_Receive_AlwaysReturnsNull()
     {
         var transport = new FakeTransport("inputQueue");
@@ -59,11 +59,11 @@ public class FakeTransportTests
         using var scope = new RebusTransactionScope();
         var message = await transport.Receive(scope.TransactionContext, CancellationToken.None);
 
-        Assert.Null(message);
+        await Assert.That(message).IsNull();
     }
 
 
-    [Fact]
+    [Test]
     public async Task BusUsingFakeTransportAsOneWayClient_Send_DoesNotThrow()
     {
         using var activator = new BuiltinHandlerActivator();
@@ -76,7 +76,7 @@ public class FakeTransportTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task BusUsingFakeTransport_Send_DoesNotDeliverMessages()
     {
         var observer = new Observer<string>();
@@ -100,7 +100,7 @@ public class FakeTransportTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task BusUsingFakeTransport_PubSub_DoesNotDeliverMessages()
     {
         var observer = new Observer<string>();
@@ -128,7 +128,7 @@ public class FakeTransportTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task BusUsingFakeTransport_Defer_DoesNotNeedATimeoutManager()
     {
         using var activator = new BuiltinHandlerActivator();
@@ -146,7 +146,7 @@ public class FakeTransportTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task BusUsingFakeTransport_Defer_DoesNotDeliverMessages()
     {
         var observer = new Observer<string>();

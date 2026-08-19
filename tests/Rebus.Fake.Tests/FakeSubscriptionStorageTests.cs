@@ -1,4 +1,4 @@
-using Hypothesist;
+﻿using Hypothesist;
 using Hypothesist.Rebus;
 
 using Rebus.Activation;
@@ -12,26 +12,26 @@ namespace Rebus;
 
 public class FakeSubscriptionStorageTests
 {
-    [Fact]
+    [Test]
     public async Task FakeSubscriptionStorage_GetSubscriberAddresses_IsAlwaysEmpty()
     {
         var storage = new FakeSubscriptionStorage();
         await storage.RegisterSubscriber("topic", "subscriber");
-        Assert.Empty(await storage.GetSubscriberAddresses("topic"));
+        await Assert.That(await storage.GetSubscriberAddresses("topic")).IsEmpty();
     }
 
 
-    [Fact]
-    public void FakeSubscriptionStorage_IsCentralized_IsTrue()
+    [Test]
+    public async Task FakeSubscriptionStorage_IsCentralized_IsTrue()
     {
         var storage = new FakeSubscriptionStorage();
 
         //Rebus uses this to decide whether subscribing goes via the transport or straight to storage
-        Assert.True(storage.IsCentralized);
+        await Assert.That(storage.IsCentralized).IsTrue();
     }
 
 
-    [Fact]
+    [Test]
     public async Task FakeSubscriptionStorage_RegisterAndUnregister_DoesNotThrow()
     {
         var storage = new FakeSubscriptionStorage();
@@ -40,7 +40,7 @@ public class FakeSubscriptionStorageTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task BusUsingFakeSubscriptionStorage_SubscribeAndUnsubscribe_DoesNotThrow()
     {
         using var activator = new BuiltinHandlerActivator();
@@ -56,7 +56,7 @@ public class FakeSubscriptionStorageTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task BusUsingFakeSubscriptionStorage_PubSub_DoesNotReceiveMessages()
     {
         var observer = new Observer<string>();
