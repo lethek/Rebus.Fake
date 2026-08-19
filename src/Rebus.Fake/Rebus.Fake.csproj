@@ -8,7 +8,7 @@
     <Authors>Michael Monsour</Authors>
     <Copyright>Copyright © Michael Monsour 2022</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Description>Transport for Rebus that doesn't actually send/receive anything at all. Kind-of like /dev/null in Linux. Useful for scenarios where you're forced to inject a Rebus instance but don't care about the functionality using it at all.</Description>
+    <Description>No-op Rebus Transport, SubscriptionStorage and SagaStorage that silently discard all operations. Kind-of like /dev/null in Linux. Not a testing tool.</Description>
     <PackageTags>rebus transport empty mock fake</PackageTags>
     <PackageProjectUrl>https://github.com/lethek/Rebus.Fake</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
