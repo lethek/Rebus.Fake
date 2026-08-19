@@ -354,3 +354,8 @@ MigrationBackup/
 
 # Fuse index
 .fuse/
+
+# Claude Code skills. The Visual Studio build-output patterns above ([Rr]elease/, [Dd]ebug/, [Bb]in/,
+# [Ll]og/) match on directory name alone, so they swallow skills named after them.
+!.claude/skills/
+!.claude/skills/**
