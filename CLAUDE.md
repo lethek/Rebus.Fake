@@ -63,6 +63,14 @@ dotnet pack -c Release -p:PackageOutputPath="./artifacts/"
 - `Find()` always returns null (no sagas found)
 - `Insert()`, `Update()`, and `Delete()` are no-ops
 
+### Deliberate Scope Boundaries
+
+Do not add fakes for these without re-checking the reasoning in README.md:
+
+- **`ITimeoutManager`**: not needed. `bus.Defer` stamps headers and sends, so `FakeTransport` discards it; the timeout manager is only consulted by `HandleDeferredMessagesStep`, an *incoming* pipeline step. Registering a fake would also start Rebus's due-messages background poller, which it skips only when the timeout manager is the `DisabledTimeoutManager` default.
+- **`IDataBus`**: excluded. `OpenRead`/`GetMetadata` must return what was written, which a discarding implementation cannot do honestly. Rebus's `DisabledDataBus` throws instead.
+- **`FakeSubscriptionStorage` / `FakeSagaStorage`**: these replace Rebus's throwing `DisabledSubscriptionStorage` and `DisabledSagaStorage` defaults, so registering them silences a real diagnostic. Only worth using when the application genuinely calls into subscriptions or sagas while faked out.
+
 ### API Documentation
 
 The library sets `GenerateDocumentationFile` with `WarningsAsErrors=CS1591`, so every publicly visible type and member must carry an XML doc comment. Adding an undocumented public API fails the build.
