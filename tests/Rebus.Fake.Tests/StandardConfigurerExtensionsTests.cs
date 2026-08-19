@@ -1,4 +1,5 @@
 ﻿using Rebus.Activation;
+using Rebus.Bus;
 using Rebus.Config;
 using Rebus.Routing.TypeBased;
 using Rebus.Sagas;
@@ -10,19 +11,19 @@ namespace Rebus;
 
 public class StandardConfigurerExtensionsTests
 {
-    [Fact]
-    public void UseFakeTransport_WithNullConfigurer_ThrowsArgumentNullException()
+    [Test]
+    public async Task UseFakeTransport_WithNullConfigurer_ThrowsArgumentNullException()
     {
         StandardConfigurer<ITransport> configurer = null!;
 
         var ex = Assert.Throws<ArgumentNullException>(() => configurer.UseFakeTransport("inputQueue"));
 
-        Assert.Equal("configurer", ex.ParamName);
+        await Assert.That(ex.ParamName).IsEqualTo("configurer");
     }
 
 
-    [Fact]
-    public void UseFakeTransport_WithNullInputQueueName_ThrowsArgumentNullException()
+    [Test]
+    public async Task UseFakeTransport_WithNullInputQueueName_ThrowsArgumentNullException()
     {
         using var activator = new BuiltinHandlerActivator();
         var ex = Assert.Throws<ArgumentNullException>(() =>
@@ -31,12 +32,12 @@ public class StandardConfigurerExtensionsTests
                 .Transport(t => t.UseFakeTransport(null!));
         });
 
-        Assert.Equal("inputQueueName", ex.ParamName);
+        await Assert.That(ex.ParamName).IsEqualTo("inputQueueName");
     }
 
 
-    [Fact]
-    public void UseFakeTransport_WithValidInputQueueName_ConfiguresBusSuccessfully()
+    [Test]
+    public async Task UseFakeTransport_WithValidInputQueueName_ConfiguresBusSuccessfully()
     {
         using var activator = new BuiltinHandlerActivator();
 
@@ -44,11 +45,11 @@ public class StandardConfigurerExtensionsTests
             .Transport(t => t.UseFakeTransport("test-queue"))
             .Start();
 
-        Assert.NotNull(bus);
+        await Assert.That(bus).IsNotNull();
     }
 
 
-    [Fact]
+    [Test]
     public async Task UseFakeTransport_AllowsSendingMessages()
     {
         using var activator = new BuiltinHandlerActivator();
@@ -62,19 +63,44 @@ public class StandardConfigurerExtensionsTests
     }
 
 
-    [Fact]
-    public void UseFakeTransportAsOneWayClient_WithNullConfigurer_ThrowsArgumentNullException()
+    [Test]
+    public async Task UseFakeTransport_RegistersTransportInspector()
+    {
+        ITransportInspector? inspector = null;
+
+        using var activator = new BuiltinHandlerActivator();
+
+        //Nothing resolves ITransportInspector during a normal Start, so resolve it from an IBus
+        //decorator, which does run. This covers the registration that UseFakeTransport sets up.
+        using var bus = Configure.With(activator)
+            .Transport(t => t.UseFakeTransport("test-queue"))
+            .Options(o => o.Decorate<IBus>(c =>
+            {
+                inspector = c.Get<ITransportInspector>();
+                return c.Get<IBus>();
+            }))
+            .Start();
+
+        await Assert.That(inspector).IsNotNull();
+
+        var properties = await inspector!.GetProperties(CancellationToken.None);
+        await Assert.That(properties[TransportInspectorPropertyKeys.QueueLength]).IsEqualTo(0);
+    }
+
+
+    [Test]
+    public async Task UseFakeTransportAsOneWayClient_WithNullConfigurer_ThrowsArgumentNullException()
     {
         StandardConfigurer<ITransport> configurer = null!;
 
         var ex = Assert.Throws<ArgumentNullException>(() => configurer.UseFakeTransportAsOneWayClient());
 
-        Assert.Equal("configurer", ex.ParamName);
+        await Assert.That(ex.ParamName).IsEqualTo("configurer");
     }
 
 
-    [Fact]
-    public void UseFakeTransportAsOneWayClient_ConfiguresBusSuccessfully()
+    [Test]
+    public async Task UseFakeTransportAsOneWayClient_ConfiguresBusSuccessfully()
     {
         using var activator = new BuiltinHandlerActivator();
 
@@ -83,11 +109,11 @@ public class StandardConfigurerExtensionsTests
             .Routing(r => r.TypeBased().Map<string>("dummy-queue"))
             .Start();
 
-        Assert.NotNull(bus);
+        await Assert.That(bus).IsNotNull();
     }
 
 
-    [Fact]
+    [Test]
     public async Task UseFakeTransportAsOneWayClient_AllowsSendingMessages()
     {
         using var activator = new BuiltinHandlerActivator();
@@ -102,19 +128,19 @@ public class StandardConfigurerExtensionsTests
     }
 
 
-    [Fact]
-    public void UseFakeSubscriptionStorage_WithNullConfigurer_ThrowsArgumentNullException()
+    [Test]
+    public async Task UseFakeSubscriptionStorage_WithNullConfigurer_ThrowsArgumentNullException()
     {
         StandardConfigurer<ISubscriptionStorage> configurer = null!;
 
         var ex = Assert.Throws<ArgumentNullException>(() => configurer.UseFakeSubscriptionStorage());
 
-        Assert.Equal("configurer", ex.ParamName);
+        await Assert.That(ex.ParamName).IsEqualTo("configurer");
     }
 
 
-    [Fact]
-    public void UseFakeSubscriptionStorage_ConfiguresBusSuccessfully()
+    [Test]
+    public async Task UseFakeSubscriptionStorage_ConfiguresBusSuccessfully()
     {
         using var activator = new BuiltinHandlerActivator();
 
@@ -123,11 +149,11 @@ public class StandardConfigurerExtensionsTests
             .Subscriptions(s => s.UseFakeSubscriptionStorage())
             .Start();
 
-        Assert.NotNull(bus);
+        await Assert.That(bus).IsNotNull();
     }
 
 
-    [Fact]
+    [Test]
     public async Task UseFakeSubscriptionStorage_AllowsSubscribeAndUnsubscribe()
     {
         using var activator = new BuiltinHandlerActivator();
@@ -143,19 +169,19 @@ public class StandardConfigurerExtensionsTests
     }
 
 
-    [Fact]
-    public void UseFakeSagaStorage_WithNullConfigurer_ThrowsArgumentNullException()
+    [Test]
+    public async Task UseFakeSagaStorage_WithNullConfigurer_ThrowsArgumentNullException()
     {
         StandardConfigurer<ISagaStorage> configurer = null!;
 
         var ex = Assert.Throws<ArgumentNullException>(() => configurer.UseFakeSagaStorage());
 
-        Assert.Equal("configurer", ex.ParamName);
+        await Assert.That(ex.ParamName).IsEqualTo("configurer");
     }
 
 
-    [Fact]
-    public void UseFakeSagaStorage_ConfiguresBusSuccessfully()
+    [Test]
+    public async Task UseFakeSagaStorage_ConfiguresBusSuccessfully()
     {
         using var activator = new BuiltinHandlerActivator();
 
@@ -164,12 +190,12 @@ public class StandardConfigurerExtensionsTests
             .Sagas(s => s.UseFakeSagaStorage())
             .Start();
 
-        Assert.NotNull(bus);
+        await Assert.That(bus).IsNotNull();
     }
 
 
-    [Fact]
-    public void AllFakeComponents_CanBeConfiguredTogether()
+    [Test]
+    public async Task AllFakeComponents_CanBeConfiguredTogether()
     {
         using var activator = new BuiltinHandlerActivator();
 
@@ -179,11 +205,11 @@ public class StandardConfigurerExtensionsTests
             .Sagas(s => s.UseFakeSagaStorage())
             .Start();
 
-        Assert.NotNull(bus);
+        await Assert.That(bus).IsNotNull();
     }
 
 
-    [Fact]
+    [Test]
     public async Task AllFakeComponents_WorkTogetherWithoutErrors()
     {
         using var activator = new BuiltinHandlerActivator();

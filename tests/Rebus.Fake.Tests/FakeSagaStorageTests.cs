@@ -11,17 +11,17 @@ namespace Rebus;
 
 public class FakeSagaStorageTests
 {
-    [Fact]
+    [Test]
     public async Task FakeSagaStorage_Find_AlwaysReturnsNull()
     {
         var storage = new FakeSagaStorage();
         var result = await storage.Find(typeof(TestSagaData), "CorrelationId", Guid.NewGuid());
 
-        Assert.Null(result);
+        await Assert.That(result).IsNull();
     }
 
 
-    [Fact]
+    [Test]
     public async Task FakeSagaStorage_Insert_DoesNotThrow()
     {
         var storage = new FakeSagaStorage();
@@ -35,7 +35,7 @@ public class FakeSagaStorageTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task FakeSagaStorage_Update_DoesNotThrow()
     {
         var storage = new FakeSagaStorage();
@@ -49,7 +49,7 @@ public class FakeSagaStorageTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task FakeSagaStorage_Delete_DoesNotThrow()
     {
         var storage = new FakeSagaStorage();
@@ -59,7 +59,7 @@ public class FakeSagaStorageTests
     }
 
 
-    [Fact]
+    [Test]
     public async Task FakeSagaStorage_InsertThenFind_StillReturnsNull()
     {
         var storage = new FakeSagaStorage();
@@ -74,11 +74,11 @@ public class FakeSagaStorageTests
 
         // Even after insert, Find should return null because it's a fake storage
         var result = await storage.Find(typeof(TestSagaData), nameof(TestSagaData.CorrelationId), correlationId);
-        Assert.Null(result);
+        await Assert.That(result).IsNull();
     }
 
 
-    [Fact]
+    [Test]
     public async Task BusUsingFakeSagaStorage_DoesNotPersistSagaBetweenMessages()
     {
         var observer = new Observer<int>();
