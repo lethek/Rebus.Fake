@@ -1,4 +1,4 @@
-using Rebus.Activation;
+﻿using Rebus.Activation;
 using Rebus.Config;
 using Rebus.Routing.TypeBased;
 using Rebus.Sagas;
@@ -198,6 +198,7 @@ public class StandardConfigurerExtensionsTests
         await bus.Subscribe<string>();
         await bus.SendLocal("test message");
         await bus.Publish("test event");
+        await bus.DeferLocal(TimeSpan.FromMinutes(1), "deferred message");
         await bus.Unsubscribe<string>();
     }
 }

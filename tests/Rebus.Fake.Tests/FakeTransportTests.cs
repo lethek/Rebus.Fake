@@ -128,5 +128,47 @@ public class FakeTransportTests
     }
 
 
+    [Fact]
+    public async Task BusUsingFakeTransport_Defer_DoesNotNeedATimeoutManager()
+    {
+        using var activator = new BuiltinHandlerActivator();
+
+        //No .Timeouts(...) here on purpose. Rebus's default timeout manager throws, but it is only
+        //consulted when a deferred message is RECEIVED. Deferring just stamps headers and sends, so
+        //the fake transport discards the message before any timeout manager is involved.
+        using var bus = Configure.With(activator)
+            .Transport(c => c.UseFakeTransport("inputQueue"))
+            .Routing(c => c.TypeBased().Map<string>("someQueue"))
+            .Start();
+
+        await bus.Defer(TimeSpan.FromMinutes(1), "Saluton mondo");
+        await bus.DeferLocal(TimeSpan.FromMinutes(1), "Saluton mondo");
+    }
+
+
+    [Fact]
+    public async Task BusUsingFakeTransport_Defer_DoesNotDeliverMessages()
+    {
+        var observer = new Observer<string>();
+
+        //Hypothesis that we receive exactly 0 messages
+        var hypothesis = Hypothesis.On(observer)
+            .Timebox(HypothesisTimeout)
+            .Exactly(0)
+            .Match(s => true);
+
+        using var activator = new BuiltinHandlerActivator().Register(observer.AsHandler);
+
+        using var bus = Configure.With(activator)
+            .Transport(c => c.UseFakeTransport("inputQueue"))
+            .Start();
+
+        //Due almost immediately, so a real transport would have delivered it within the timebox
+        await bus.DeferLocal(TimeSpan.FromMilliseconds(1), "Saluton mondo");
+
+        await hypothesis.Validate();
+    }
+
+
     private static readonly TimeSpan HypothesisTimeout = TimeSpan.FromSeconds(0.5);
 }

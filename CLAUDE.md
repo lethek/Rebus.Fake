@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Rebus.Fake is a NuGet package that provides "no-op" implementations of Rebus components (Transport, SubscriptionStorage, SagaStorage) that silently discard all operations. This is useful for scenarios where a Rebus instance must be injected but messaging functionality is not needed (e.g., offline mode in applications designed for both online and offline use).
 
-**Important**: This is NOT intended for testing. Use Rebus's official InMemory transport for tests. FakeTransport is specifically for production scenarios where messages should be discarded.
+**Important**: This is not a testing tool. Use Rebus's official InMemory transport to run handlers, or `Rebus.TestHelpers.FakeBus` to assert which messages were sent. Rebus.Fake targets production scenarios where messages should be discarded; the one testing case it suits is a host test where the bus must exist but stay inert. See the README for the full comparison.
 
 ## Solution Structure
 
@@ -63,6 +63,14 @@ dotnet pack -c Release -p:PackageOutputPath="./artifacts/"
 - `Find()` always returns null (no sagas found)
 - `Insert()`, `Update()`, and `Delete()` are no-ops
 
+### Scope Boundaries
+
+Do not add fakes for these without re-checking the reasoning in README.md:
+
+- **`ITimeoutManager`**: not needed. `bus.Defer` stamps headers and sends, so `FakeTransport` discards it; the timeout manager is only consulted by `HandleDeferredMessagesStep`, an *incoming* pipeline step. Registering a fake would also start Rebus's due-messages background poller, which it skips only when the timeout manager is the `DisabledTimeoutManager` default.
+- **`IDataBus`**: excluded. `OpenRead`/`GetMetadata` must return what was written, which a discarding implementation can only fake by returning empty streams that look like real payloads. Rebus's `DisabledDataBus` throws instead.
+- **`FakeSubscriptionStorage` / `FakeSagaStorage`**: these replace Rebus's throwing `DisabledSubscriptionStorage` and `DisabledSagaStorage` defaults, so registering them silences a real diagnostic. Use them only when the application calls into subscriptions or sagas while faked out.
+
 ### API Documentation
 
 The library sets `GenerateDocumentationFile` with `WarningsAsErrors=CS1591`, so every publicly visible type and member must carry an XML doc comment. Adding an undocumented public API fails the build.
@@ -93,18 +101,25 @@ Tests use:
 
 Test pattern: Tests create hypotheses that exactly 0 messages are received within a short timeout (0.5s), then send messages and verify the hypothesis holds.
 
+`Exactly(n)` cannot complete early, since ruling out an `n+1`th message means waiting out the whole timebox. Tests asserting that something *did* happen use `AtLeast(n)` instead, which completes as soon as the target is reached - see `BusUsingFakeSagaStorage_DoesNotPersistSagaBetweenMessages`. Bound every wait so a broken test fails rather than hangs.
+
+Tests that assert a fake replaces a throwing Rebus default (subscriptions, sagas) should be checked by temporarily swapping in the real implementation and confirming the test fails. Several of these pass vacuously otherwise.
+
 ## CI/CD
 
 GitHub Actions workflow (`.github/workflows/dotnet.yml`):
 1. Runs on pushes to main/master, version tags, and pull requests against main/master
 2. Uses GitVersion to determine package version
 3. Builds with .NET 8.x and 10.x
-4. Runs tests (excluding IntegrationTests filter)
-5. Packs, uploads the packages as build artifacts, and publishes to NuGet
+4. Runs tests (excluding IntegrationTests filter) with `--collect:"XPlat Code Coverage"`
+5. Merges both frameworks' Cobertura reports with ReportGenerator, writes the result to the job summary, and comments it on pull requests
+6. Packs, uploads the packages as build artifacts, and publishes to NuGet
+
+Coverage steps use `if: ${{ !cancelled() }}` so a failing test run still reports coverage. The PR comment uses `gh pr comment --edit-last --create-if-none` to update a single comment rather than adding one per push; it cannot post on pull requests from forks, which only get a read-only token, so that step is `continue-on-error`.
 
 Publishing uses [NuGet Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) rather than a long-lived API key. The `NuGet/login` step exchanges a GitHub OIDC token (hence `id-token: write`) for an API key valid for 1 hour, so it must stay immediately before the push step. The only secret involved is `NUGET_USER`, the nuget.org profile name. The matching trusted publishing policy is registered on nuget.org against repository owner `lethek`, repository `Rebus.Fake`, and workflow file `dotnet.yml`; renaming the workflow file breaks publishing until the policy is updated.
 
-Publishing is controlled by the `publishEnabled` variable in the workflow's `env` block. While it is `'false'` the push step is skipped; set it to `'true'` to publish. The push step additionally only runs for `push` events, so pull requests can never publish.
+Publishing is controlled by the `publishEnabled` variable in the workflow's `env` block; set it to `'false'` to skip the login and push steps. Those steps also require a `push` event, so pull requests can never publish, and they skip entirely when the `NUGET_USER` secret is absent, which keeps a fork or a copy of this workflow green without publishing configured. `NUGET_USER` is read into a job-level `env` entry because the `secrets` context is not available in the workflow-level `env` block.
 
 ## Dependencies
 
