@@ -57,16 +57,17 @@ jobs:
 
     # TUnit runs on Microsoft.Testing.Platform (see global.json), which does not accept VSTest's
     # --filter or --collect. Coverage comes from Microsoft.Testing.Extensions.CodeCoverage instead.
-    # No --coverage-output: each target framework then writes into its own bin/<tfm>/TestResults,
-    # so the two reports are kept separate and merged below rather than overwriting each other.
+    # --results-directory pins where coverage lands; the default location differs between Windows
+    # and Linux. Not --coverage-output, which is a single file path and would make the two target
+    # frameworks overwrite each other. Each framework writes a GUID-named report here instead.
     - name: Test
-      run: dotnet test -c ${{ env.buildConfiguration }} --no-build --coverage --coverage-output-format cobertura
+      run: dotnet test -c ${{ env.buildConfiguration }} --no-build --coverage --coverage-output-format cobertura --results-directory ${{ github.workspace }}/coverage
 
     - name: Generate coverage summary
       if: ${{ !cancelled() }}
       uses: danielpalme/ReportGenerator-GitHub-Action@5.5.11
       with:
-        reports: ${{ github.workspace }}/tests/**/TestResults/*.cobertura.xml
+        reports: ${{ github.workspace }}/coverage/*.cobertura.xml
         targetdir: ${{ github.workspace }}/coveragereport
         reporttypes: MarkdownSummaryGithub
 
@@ -88,7 +89,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: coverage
-        path: ${{ github.workspace }}/tests/**/TestResults/*.cobertura.xml
+        path: ${{ github.workspace }}/coverage/*.cobertura.xml
 
     - name: Pack
       run: dotnet pack -c ${{ env.buildConfiguration }} -p:PackageOutputPath="${{ github.workspace }}/artifacts/" -p:PackageVersion=${{ steps.gitversion.outputs.semVer }}

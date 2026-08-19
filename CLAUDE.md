@@ -126,7 +126,12 @@ GitHub Actions workflow (`.github/workflows/dotnet.yml`):
 5. Merges both frameworks' Cobertura reports with ReportGenerator, writes the result to the job summary, and comments it on pull requests
 6. Packs, uploads the packages as build artifacts, and publishes to NuGet
 
-CI deliberately does **not** pass `--coverage-output`. A single path makes both target frameworks write to the same file, so whichever finishes last silently overwrites the other - which would hide per-framework differences the moment the library multi-targets or gains `#if` blocks. Left to the default, each framework writes into its own `bin/<tfm>/TestResults`, and ReportGenerator merges them (the summary then reports `MultiReport (2x Cobertura)`). Note that `--coverage-output` also rejects a directory path, throwing `DirectoryNotFoundException`.
+Coverage uses `--results-directory`, not `--coverage-output`. The distinction matters:
+
+- `--coverage-output` takes a single **file** path, so both target frameworks write to it and the last to finish silently overwrites the other. That would hide per-framework differences as soon as the library multi-targets or gains `#if` blocks. It also rejects a directory path, throwing `DirectoryNotFoundException`.
+- `--results-directory` takes a **directory**, and each framework writes a GUID-named report into it, so both survive and ReportGenerator merges them (the summary reports `MultiReport (2x Cobertura)`).
+
+Do not rely on the default location: on Windows the reports land under `tests/**/bin/<tfm>/TestResults`, but on the Linux CI runner they land in the workspace root `TestResults`. A glob written against one platform silently matches nothing on the other, which fails ReportGenerator rather than the test run.
 
 Coverage steps use `if: ${{ !cancelled() }}` so a failing test run still reports coverage. The PR comment uses `gh pr comment --edit-last --create-if-none` to update a single comment rather than adding one per push; it cannot post on pull requests from forks, which only get a read-only token, so that step is `continue-on-error`.
 
