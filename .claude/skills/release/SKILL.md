@@ -23,14 +23,28 @@ git status --porcelain                   # must be empty
 git fetch origin && git status -sb       # must not be behind origin/main
 ```
 
-Confirm CI is green on the commit being released. It is cheaper and more accurate than a local run,
-since CI covers net8.0 and net10.0 on Linux:
+Confirm CI is green **on the commit being released**, not merely on `main`. The latest run is usually
+for an older commit, so compare the SHAs rather than trusting the green tick:
 
 ```bash
-gh run list --branch main --limit 1
+git rev-parse HEAD
+gh run list --branch main --limit 1 --json headSha,conclusion,displayTitle
 ```
 
-A red or missing run is a blocker. Raise it and stop.
+If `headSha` matches `HEAD` and `conclusion` is `success`, CI covers what you are releasing.
+
+Otherwise it does not, and the usual cause is commits sitting unpushed. CI cannot be made to cover
+those without pushing, which is the very thing awaiting approval, so verify locally instead:
+
+```bash
+dotnet test -c Debug
+```
+
+Add `dotnet pack -c Debug` when the diff touches `Rebus.Fake.csproj`, since package metadata is not
+exercised by a test run.
+
+A red CI run on a matching SHA, or any local failure, is a blocker. Raise it and stop. Report which of
+the two paths was used and say so precisely; "CI is green" and "I built it locally" are different claims.
 
 ## 2. Find the last stable version
 
